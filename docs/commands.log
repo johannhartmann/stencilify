@@ -91,3 +91,30 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 4 - Superpixelization and adjacency
+
+```bash
+# Add scikit-image dependency
+uv sync
+
+# Test imports
+uv run python -c "from stencilify.superpixels import compute_superpixels, build_adjacency, compute_mean_lab"
+
+# Run superpixel tests
+uv run pytest tests/test_superpixels.py -v
+uv run pytest tests/test_superpixels.py::test_superpixels_respects_n_segments -v
+
+# Format code
+uv run ruff format tests/test_superpixels.py
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---
