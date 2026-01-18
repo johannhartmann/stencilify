@@ -289,9 +289,32 @@ def generate(
     if config.seed is not None:
         logger.info(f"Random seed: {config.seed}")
 
-    # TODO: Implement generation pipeline in subsequent steps
-    typer.echo("\n[Stub] Generation pipeline not yet implemented")
-    typer.echo(f"Configuration validated successfully with {len(config.palette)} colors")
+    # Run pipeline
+    try:
+        from stencilify.pipeline import run_pipeline
+
+        result = run_pipeline(config)
+
+        # Report warnings
+        if result.warnings:
+            logger.warning(f"\nPipeline completed with {len(result.warnings)} warning(s):")
+            for warning in result.warnings:
+                logger.warning(f"  - {warning}")
+
+        # Success
+        typer.echo(f"\n✓ Successfully generated {len(result.layers)} stencil layers")
+        typer.echo(f"  Output directory: {config.export.output_dir}")
+        typer.echo(f"  Report: {config.export.output_dir / 'report.json'}")
+
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        raise typer.Exit(code=1) from e
+    except ValueError as e:
+        logger.error(f"Pipeline error: {e}")
+        raise typer.Exit(code=1) from e
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        raise typer.Exit(code=1) from e
 
 
 @app.command()

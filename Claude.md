@@ -84,7 +84,7 @@ All commands must pass (exit code 0) before marking a step as DONE.
 | 9 | Island fixing: fill small islands, add bridges | DONE | PASS | Distance transform bridging, 251 tests pass | 2026-01-18 |
 | 10 | Page layout and registration marks | DONE | PASS | Page canvas, artwork placement, registration marks, 275 tests pass | 2026-01-18 |
 | 11 | Exporting to PNG and SVG | DONE | PASS | PNG export, SVG contours/potrace backends, 299 tests pass | 2026-01-18 |
-| 12 | | TODO | | | |
+| 12 | End-to-end pipeline integration | DONE | PASS | Full pipeline, report.json, 305 tests pass | 2026-01-18 |
 | 13 | | TODO | | | |
 | 14 | | TODO | | | |
 | 15 | | TODO | | | |

@@ -124,8 +124,13 @@ def test_generate_too_few_colors(tmp_path: Path) -> None:
 
 def test_generate_valid(tmp_path: Path) -> None:
     """Test that generate succeeds with valid config."""
+    # Create a real synthetic RGBA image
+    import numpy as np
+    from PIL import Image
+
+    img = Image.new("RGBA", (100, 100), (128, 128, 128, 255))
     input_file = tmp_path / "input.png"
-    input_file.write_bytes(b"fake png data")
+    img.save(input_file)
 
     result = runner.invoke(
         app,
@@ -136,7 +141,9 @@ def test_generate_valid(tmp_path: Path) -> None:
             "#000000",
             "--palette",
             "#ffffff",
+            "--outdir",
+            str(tmp_path / "output"),
         ],
     )
     assert result.exit_code == 0
-    assert "Configuration validated successfully" in result.stdout
+    assert "Successfully generated" in result.stdout

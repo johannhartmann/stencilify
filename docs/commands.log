@@ -282,3 +282,30 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 12 - End-to-end pipeline integration
+
+```bash
+# Test pipeline imports
+uv run python -c "from stencilify.pipeline import run_pipeline, PipelineResult, LayerMetrics"
+
+# Run integration tests
+uv run pytest tests/test_integration.py -v
+
+# Run specific test
+uv run pytest tests/test_integration.py::test_pipeline_synthetic_2_colors -xvs
+
+# Fix linting
+uv run ruff format src/stencilify/pipeline.py
+uv run ruff check --fix .
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---
