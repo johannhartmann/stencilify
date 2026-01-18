@@ -212,3 +212,26 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 9 - Island fixing: fill small islands, add bridges
+
+```bash
+# Test imports
+uv run python -c "from stencilify.bridges import fix_islands, BridgeReport, BridgeInfo"
+
+# Run bridge tests
+uv run pytest tests/test_bridges.py -v
+
+# Format code
+uv run ruff format src/stencilify/bridges.py
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---
