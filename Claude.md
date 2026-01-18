@@ -80,7 +80,7 @@ All commands must pass (exit code 0) before marking a step as DONE.
 | 5 | Palette-constrained labeling over superpixels | DONE | PASS | ICM optimization, locks support, 146 tests pass | 2026-01-18 |
 | 6 | Layer mask generation and preview composite | DONE | PASS | Open masks, paint order, knockout property, 187 tests pass | 2026-01-18 |
 | 7 | Stencil/cuttability optimization per layer | DONE | PASS | Morphological cleanup, cutout removal, 215 tests pass | 2026-01-18 |
-| 8 | | TODO | | | |
+| 8 | Island detection for stencil material support | DONE | PASS | Material island detection, 234 tests pass | 2026-01-18 |
 | 9 | | TODO | | | |
 | 10 | | TODO | | | |
 | 11 | | TODO | | | |
