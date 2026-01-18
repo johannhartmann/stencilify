@@ -9,3 +9,28 @@ This is an append-only log of all uv commands and key shell commands executed du
 No commands executed yet (scaffolding creation only).
 
 ---
+
+## 2026-01-18: Step 1 - Project initialization and CLI skeleton
+
+```bash
+# Initialize uv project for Python 3.12
+uv init --python 3.12 --lib
+
+# Install dependencies
+uv sync
+
+# Test CLI help commands
+uv run stencilify --help
+uv run stencilify generate --help
+
+# Format validate.py
+uv run ruff format tools/validate.py
+
+# Validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+```
+
+---

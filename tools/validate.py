@@ -20,7 +20,7 @@ def run_check(name: str, command: list[str]) -> bool:
     print(f"\n{'=' * 60}")
     print(f"Running: {name}")
     print(f"Command: {' '.join(command)}")
-    print('=' * 60)
+    print("=" * 60)
 
     result = subprocess.run(command, capture_output=False)
 
@@ -49,9 +49,9 @@ def main() -> int:
 
     print(f"\n{'=' * 60}")
     print("Validation Summary")
-    print('=' * 60)
+    print("=" * 60)
 
-    for (name, _), passed in zip(checks, results):
+    for (name, _), passed in zip(checks, results, strict=True):
         status = "✓ PASS" if passed else "✗ FAIL"
         print(f"{status}: {name}")
 
@@ -59,11 +59,11 @@ def main() -> int:
     print(f"\n{'=' * 60}")
     if all_passed:
         print("All validation checks PASSED ✓")
-        print('=' * 60)
+        print("=" * 60)
         return 0
     else:
         print("Some validation checks FAILED ✗")
-        print('=' * 60)
+        print("=" * 60)
         return 1
 
 

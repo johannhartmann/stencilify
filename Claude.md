@@ -73,7 +73,7 @@ All commands must pass (exit code 0) before marking a step as DONE.
 
 | Step | Title | Status | Validation | Notes | Date |
 |------|-------|--------|------------|-------|------|
-| 1 | | TODO | | | |
+| 1 | Project initialization and CLI skeleton | DONE | PASS | uv init, CLI stub working, all validations pass | 2026-01-18 |
 | 2 | | TODO | | | |
 | 3 | | TODO | | | |
 | 4 | | TODO | | | |
