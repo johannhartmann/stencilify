@@ -8,7 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "click>=8.1.7",
+    "typer>=0.12.0",
+    "pydantic>=2.0.0",
     "numpy>=1.26.0",
     "pillow>=10.0.0",
 ]
@@ -19,7 +20,7 @@ gpu = [
 ]
 
 [project.scripts]
-stencilify = "stencilify.cli:main"
+stencilify = "stencilify.cli:cli_main"
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]

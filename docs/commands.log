@@ -34,3 +34,35 @@ uv run pytest -q
 ```
 
 ---
+
+## 2026-01-18: Step 2 - Configuration system and CLI options
+
+```bash
+# Add pydantic and typer dependencies, sync
+uv sync
+
+# Create test input image for validation
+uv run python -c "from PIL import Image; ..."
+
+# Test CLI commands
+uv run stencilify --help
+uv run stencilify generate --help
+uv run stencilify config --print-defaults
+uv run stencilify generate test_input.png --palette="#000000" --palette="#ffffff"
+
+# Format code
+uv run ruff format .
+uv run ruff format src/stencilify/cli.py
+
+# Validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -v
+uv run pytest -q
+
+# Full validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---

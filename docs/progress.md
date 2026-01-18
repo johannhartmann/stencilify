@@ -2,8 +2,8 @@
 
 ## Current Status
 
-**Active Step**: None (Step 1 complete, awaiting Step 2)
-**Overall Progress**: 1/15 steps completed
+**Active Step**: None (Step 2 complete, awaiting Step 3)
+**Overall Progress**: 2/15 steps completed
 **Last Updated**: 2026-01-18
 
 ## Step Tracking Table
@@ -11,7 +11,7 @@
 | Step | Title | Status | Validation | Notes | Date |
 |------|-------|--------|------------|-------|------|
 | 1 | Project initialization and CLI skeleton | DONE | PASS | uv init, CLI stub working, all validations pass | 2026-01-18 |
-| 2 | | TODO | | | |
+| 2 | Configuration system and CLI options | DONE | PASS | Pydantic models, Typer CLI, 54 tests pass | 2026-01-18 |
 | 3 | | TODO | | | |
 | 4 | | TODO | | | |
 | 5 | | TODO | | | |
