@@ -118,3 +118,30 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 5 - Palette-constrained labeling over superpixels
+
+```bash
+# Test imports
+uv run python -c "from stencilify.labeling import assign_labels_icm, hex_to_lab"
+uv run python -c "from stencilify.locks import load_lock_mask, map_locks_to_superpixels"
+
+# Run labeling and locks tests
+uv run pytest tests/test_labeling.py tests/test_locks.py -v
+
+# Fix test expectation
+# (superpixel with mean_lab [20,0,0] is closer to black [0,0,0] than white [100,0,0])
+
+# Format code
+uv run ruff format src/stencilify/labeling.py src/stencilify/locks.py tests/test_labeling.py
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---

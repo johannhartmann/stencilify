@@ -77,7 +77,7 @@ All commands must pass (exit code 0) before marking a step as DONE.
 | 2 | Configuration system and CLI options | DONE | PASS | Pydantic models, Typer CLI, 54 tests pass | 2026-01-18 |
 | 3 | Image I/O and scaling layer | DONE | PASS | RGBA loading, resolution scaling, silhouette, 83 tests | 2026-01-18 |
 | 4 | Superpixelization and adjacency | DONE | PASS | SLIC superpixels, adjacency graph, 102 tests pass | 2026-01-18 |
-| 5 | | TODO | | | |
+| 5 | Palette-constrained labeling over superpixels | DONE | PASS | ICM optimization, locks support, 146 tests pass | 2026-01-18 |
 | 6 | | TODO | | | |
 | 7 | | TODO | | | |
 | 8 | | TODO | | | |
