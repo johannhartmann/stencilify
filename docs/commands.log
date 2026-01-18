@@ -66,3 +66,28 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+
+## 2026-01-18: Step 3 - Image I/O and scaling layer
+
+```bash
+# Add scipy dependency
+uv sync
+
+# Test imports
+uv run python -c "from stencilify.imageio import load_rgba, resize_to_working; ..."
+
+# Format code
+uv run ruff format .
+
+# Validation sequence
+uv run pytest tests/test_imageio.py tests/test_masks.py -v
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Full validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---

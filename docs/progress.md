@@ -2,8 +2,8 @@
 
 ## Current Status
 
-**Active Step**: None (Step 2 complete, awaiting Step 3)
-**Overall Progress**: 2/15 steps completed
+**Active Step**: None (Step 3 complete, awaiting Step 4)
+**Overall Progress**: 3/15 steps completed
 **Last Updated**: 2026-01-18
 
 ## Step Tracking Table
@@ -12,7 +12,7 @@
 |------|-------|--------|------------|-------|------|
 | 1 | Project initialization and CLI skeleton | DONE | PASS | uv init, CLI stub working, all validations pass | 2026-01-18 |
 | 2 | Configuration system and CLI options | DONE | PASS | Pydantic models, Typer CLI, 54 tests pass | 2026-01-18 |
-| 3 | | TODO | | | |
+| 3 | Image I/O and scaling layer | DONE | PASS | RGBA loading, resolution scaling, silhouette, 83 tests | 2026-01-18 |
 | 4 | | TODO | | | |
 | 5 | | TODO | | | |
 | 6 | | TODO | | | |
