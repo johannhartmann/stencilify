@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from PIL import Image
 
+from stencilify.autotune import run_autotune, save_candidates_csv
 from stencilify.bridges import fix_islands
 from stencilify.config import PipelineConfig, VectorBackend
 from stencilify.export import export_png, export_svg_contours, export_svg_potrace
@@ -70,6 +71,13 @@ class PipelineResult:
     # Superpixel parameters
     superpixel_count: int
     superpixel_compactness: float
+    smooth_lambda: float = 1.0
+    cleanup_strength: float = 1.0
+
+    # Autotune results (if enabled)
+    autotune_enabled: bool = False
+    autotune_best_score: float | None = None
+    autotune_candidates_evaluated: int = 0
 
     # Per-layer metrics
     layers: list[LayerMetrics] = field(default_factory=list)
@@ -79,7 +87,7 @@ class PipelineResult:
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
-        return {
+        result_dict = {
             "input_image": self.input_image,
             "palette": self.palette,
             "paint_order": self.paint_order,
@@ -95,6 +103,8 @@ class PipelineResult:
                 "min_feature_mm": self.min_feature_mm,
                 "min_island_area_mm2": self.min_island_area_mm2,
                 "bridge_width_mm": self.bridge_width_mm,
+                "smooth_lambda": self.smooth_lambda,
+                "cleanup_strength": self.cleanup_strength,
             },
             "superpixels": {
                 "count": self.superpixel_count,
@@ -125,6 +135,16 @@ class PipelineResult:
             "warnings": self.warnings,
         }
 
+        # Add autotune info if enabled
+        if self.autotune_enabled:
+            result_dict["autotune"] = {
+                "enabled": True,
+                "best_score": self.autotune_best_score,
+                "candidates_evaluated": self.autotune_candidates_evaluated,
+            }
+
+        return result_dict
+
 
 def run_pipeline(config: PipelineConfig) -> PipelineResult:
     """
@@ -144,21 +164,67 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
     logger.info("Starting stencilify pipeline")
     logger.info("=" * 60)
 
-    # Initialize result
-    result = PipelineResult(
-        input_image=str(config.input_image),
-        palette=config.palette,
-        paint_order=config.paint_order.value,
-        page_size=config.page.size.value,
-        page_orientation=config.page.orientation.value,
-        px_per_mm=300.0 / 25.4,  # 300 DPI
-        margin_mm=config.page.margin_mm,
-        min_feature_mm=config.cuttability.min_feature_mm,
-        min_island_area_mm2=config.cuttability.min_island_area_mm2,
-        bridge_width_mm=config.cuttability.bridge_width_mm,
-        superpixel_count=500,  # Default
-        superpixel_compactness=10.0,  # Default
-    )
+    # Determine resolution
+    px_per_mm = 300.0 / 25.4  # 300 DPI
+
+    # Run autotune if enabled
+    if config.autotune.enabled:
+        autotune_result = run_autotune(config, px_per_mm)
+
+        # Use best parameters
+        n_segments = autotune_result.best_params.n_segments
+        compactness = autotune_result.best_params.slic_compactness
+        smooth_lambda = autotune_result.best_params.smooth_lambda
+        cleanup_strength = autotune_result.best_params.cleanup_strength
+
+        # Save candidates CSV
+        candidates_path = config.export.output_dir / "candidates.csv"
+        config.export.output_dir.mkdir(parents=True, exist_ok=True)
+        save_candidates_csv(autotune_result.all_candidates, candidates_path)
+
+        # Initialize result with autotune info
+        result = PipelineResult(
+            input_image=str(config.input_image),
+            palette=config.palette,
+            paint_order=config.paint_order.value,
+            page_size=config.page.size.value,
+            page_orientation=config.page.orientation.value,
+            px_per_mm=px_per_mm,
+            margin_mm=config.page.margin_mm,
+            min_feature_mm=config.cuttability.min_feature_mm,
+            min_island_area_mm2=config.cuttability.min_island_area_mm2,
+            bridge_width_mm=config.cuttability.bridge_width_mm,
+            superpixel_count=n_segments,
+            superpixel_compactness=compactness,
+            smooth_lambda=smooth_lambda,
+            cleanup_strength=cleanup_strength,
+            autotune_enabled=True,
+            autotune_best_score=autotune_result.best_score,
+            autotune_candidates_evaluated=len(autotune_result.all_candidates),
+        )
+    else:
+        # Use default parameters
+        n_segments = 500
+        compactness = 10.0
+        smooth_lambda = 1.0
+        cleanup_strength = 1.0
+
+        result = PipelineResult(
+            input_image=str(config.input_image),
+            palette=config.palette,
+            paint_order=config.paint_order.value,
+            page_size=config.page.size.value,
+            page_orientation=config.page.orientation.value,
+            px_per_mm=px_per_mm,
+            margin_mm=config.page.margin_mm,
+            min_feature_mm=config.cuttability.min_feature_mm,
+            min_island_area_mm2=config.cuttability.min_island_area_mm2,
+            bridge_width_mm=config.cuttability.bridge_width_mm,
+            superpixel_count=n_segments,
+            superpixel_compactness=compactness,
+            smooth_lambda=smooth_lambda,
+            cleanup_strength=cleanup_strength,
+        )
 
     # Step 1: Load image + working resize + silhouette
     logger.info("Step 1: Loading image and creating silhouette")
@@ -175,8 +241,7 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
 
     # Step 2: Superpixels
     logger.info("Step 2: Computing superpixels")
-    n_segments = 500
-    compactness = 10.0
+    logger.info(f"  Using n_segments={n_segments}, compactness={compactness}")
 
     spx_result = compute_superpixels(
         rgb,
@@ -187,7 +252,6 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
 
     spx_labels = spx_result.labels
     result.superpixel_count = spx_result.count
-    result.superpixel_compactness = compactness
     logger.info(f"  Created {spx_result.count} superpixels")
 
     # Use pre-computed adjacency and mean_lab from result
@@ -225,11 +289,12 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
         logger.info(f"  Locked {len(locked_spx)} superpixels")
 
     # Run ICM optimization
+    logger.info(f"  Using smooth_lambda={smooth_lambda}")
     labeling_result = assign_labels_icm(
         mean_lab=mean_lab,
         adjacency=adjacency,
         palette_lab=palette_lab,
-        smooth_lambda=1.0,
+        smooth_lambda=smooth_lambda,
         locked_spx=locked_spx,
         max_iters=10,
         seed=config.seed,
@@ -252,8 +317,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
 
     # Step 5: Per-layer stencil optimization
     logger.info("Step 5: Stencil optimization per layer")
+    logger.info(f"  Using cleanup_strength={cleanup_strength}")
 
-    min_feature_px = round(config.cuttability.min_feature_mm * result.px_per_mm)
+    min_feature_px = round(config.cuttability.min_feature_mm * result.px_per_mm * cleanup_strength)
     min_cutout_area_px = round(config.cuttability.min_island_area_mm2 * (result.px_per_mm**2))
     min_island_area_px = round(mm2_to_pixels2(config.cuttability.min_island_area_mm2, dpi=300.0))
     bridge_width_px = round(mm_to_pixels(config.cuttability.bridge_width_mm, dpi=300.0))

@@ -125,7 +125,6 @@ def test_generate_too_few_colors(tmp_path: Path) -> None:
 def test_generate_valid(tmp_path: Path) -> None:
     """Test that generate succeeds with valid config."""
     # Create a real synthetic RGBA image
-    import numpy as np
     from PIL import Image
 
     img = Image.new("RGBA", (100, 100), (128, 128, 128, 255))
