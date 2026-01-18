@@ -145,3 +145,27 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 6 - Layer mask generation and preview composite
+
+```bash
+# Test imports
+uv run python -c "from stencilify.layers import build_open_masks, compute_paint_order"
+uv run python -c "from stencilify.preview import render_preview, save_preview"
+
+# Run layers and preview tests
+uv run pytest tests/test_layers.py tests/test_preview.py -v
+
+# Format code
+uv run ruff format src/stencilify/preview.py
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---
