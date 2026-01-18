@@ -15,6 +15,7 @@ dependencies = [
     "scipy>=1.11.0",
     "scikit-image>=0.22.0",
     "opencv-python>=4.8.0",
+    "svgwrite>=1.4.0",
 ]
 
 [project.optional-dependencies]

@@ -255,3 +255,30 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 11 - Exporting to PNG and SVG
+
+```bash
+# Add svgwrite dependency
+# Edit pyproject.toml to add svgwrite>=1.4.0
+uv sync
+
+# Test imports
+uv run python -c "from stencilify.export import export_png, export_svg_contours, export_svg_potrace"
+
+# Run export tests
+uv run pytest tests/test_export.py -v
+
+# Format code
+uv run ruff format src/stencilify/export.py
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---
