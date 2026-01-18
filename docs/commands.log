@@ -169,3 +169,26 @@ uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run p
 ```
 
 ---
+## 2026-01-18: Step 7 - Stencil/cuttability optimization per layer
+
+```bash
+# Add opencv-python dependency
+uv sync
+
+# Test imports
+uv run python -c "from stencilify.stencil_opt import morph_cleanup, remove_small_cutouts, compute_layer_metrics"
+
+# Run stencil optimization tests
+uv run pytest tests/test_stencil_opt.py -v
+
+# Full validation sequence
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy .
+uv run pytest -q
+
+# Combined validation
+uv run ruff format --check . && uv run ruff check . && uv run mypy . && uv run pytest -q
+```
+
+---
