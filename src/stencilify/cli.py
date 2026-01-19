@@ -367,6 +367,136 @@ def config(
         typer.echo("Use --print-defaults to see default configuration")
 
 
+@app.command()
+def doctor() -> None:
+    """
+    Check system setup and dependencies.
+
+    Verifies that all required dependencies are working and reports
+    on optional features (GPU, potrace).
+    """
+    import platform
+    import shutil
+    import subprocess
+
+    import cv2
+    import numpy as np
+    import skimage
+    from PIL import Image
+
+    skimage_version = skimage.__version__  # type: ignore[attr-defined]
+
+    typer.echo("=" * 60)
+    typer.echo("Stencilify System Check")
+    typer.echo("=" * 60)
+    typer.echo()
+
+    # Python and platform info
+    typer.echo("📋 System Information")
+    typer.echo(f"  Python version: {platform.python_version()}")
+    typer.echo(f"  Platform: {platform.system()} {platform.release()}")
+    typer.echo(f"  Stencilify version: {__version__}")
+    typer.echo()
+
+    # Required dependencies
+    typer.echo("✓ Required Dependencies")
+    typer.echo(f"  OpenCV: {cv2.__version__}")
+    typer.echo(f"  Pillow: {Image.__version__}")
+    typer.echo(f"  NumPy: {np.__version__}")
+    typer.echo(f"  scikit-image: {skimage_version}")
+    typer.echo()
+
+    # Test OpenCV basic operations
+    typer.echo("🔧 Testing OpenCV...")
+    try:
+        test_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _ = cv2.cvtColor(test_img, cv2.COLOR_RGB2GRAY)
+        contours, _ = cv2.findContours(
+            np.zeros((100, 100), dtype=np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        typer.echo("  ✓ OpenCV basic operations working")
+    except Exception as e:
+        typer.echo(f"  ✗ OpenCV error: {e}", err=True)
+    typer.echo()
+
+    # GPU availability
+    typer.echo("🎮 GPU Acceleration (Optional)")
+    try:
+        import torch  # type: ignore[import-not-found]
+
+        typer.echo(f"  PyTorch: {torch.__version__}")
+        if torch.cuda.is_available():
+            typer.echo(f"  CUDA available: Yes (Device: {torch.cuda.get_device_name(0)})")
+            typer.echo(f"  CUDA version: {torch.version.cuda}")
+        else:
+            typer.echo("  CUDA available: No")
+
+        try:
+            import kornia  # type: ignore[import-not-found]
+
+            typer.echo(f"  Kornia: {kornia.__version__}")
+        except ImportError:
+            typer.echo("  Kornia: Not installed")
+
+        typer.echo()
+        typer.echo("  Use --device cuda or --device auto to enable GPU acceleration")
+    except ImportError:
+        typer.echo("  PyTorch: Not installed")
+        typer.echo("  GPU acceleration unavailable (CPU only)")
+        typer.echo()
+        typer.echo("  To enable GPU: uv sync --extra gpu")
+    typer.echo()
+
+    # Potrace availability
+    typer.echo("🎨 Vector Backends")
+    typer.echo("  Contours (OpenCV): ✓ Available")
+
+    potrace_path = shutil.which("potrace")
+    if potrace_path:
+        try:
+            result = subprocess.run(
+                ["potrace", "--version"], capture_output=True, text=True, timeout=5
+            )
+            version_line = result.stdout.split("\n")[0] if result.stdout else "Unknown"
+            typer.echo(f"  Potrace: ✓ Available ({version_line})")
+            typer.echo(f"    Path: {potrace_path}")
+        except Exception as e:
+            typer.echo(f"  Potrace: Found but error running: {e}")
+    else:
+        typer.echo("  Potrace: Not installed (optional)")
+        typer.echo("    Install: apt-get install potrace  or  brew install potrace")
+    typer.echo()
+
+    # Summary
+    typer.echo("=" * 60)
+    typer.echo("Summary")
+    typer.echo("=" * 60)
+
+    all_good = True
+    try:
+        # Check if we can import all critical modules
+        from stencilify.pipeline import run_pipeline  # noqa: F401
+
+        typer.echo("✓ All required dependencies are working")
+    except Exception as e:
+        typer.echo(f"✗ Dependency error: {e}", err=True)
+        all_good = False
+
+    if all_good:
+        typer.echo("✓ System is ready to use stencilify")
+        typer.echo()
+        typer.echo("Next steps:")
+        typer.echo("  1. Prepare an RGBA portrait image")
+        typer.echo("  2. Run: stencilify generate input.png --palette #000000 --palette #ffffff")
+        typer.echo("  3. Check the output in the 'out/' directory")
+        typer.echo()
+        typer.echo("See examples/ folder for more recipes and guides")
+    else:
+        typer.echo()
+        typer.echo("Please fix the errors above before using stencilify")
+        raise typer.Exit(code=1)
+
+
 @app.callback()
 def main(
     version: Annotated[

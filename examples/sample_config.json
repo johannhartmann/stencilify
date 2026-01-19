@@ -1,0 +1,29 @@
+{
+  "input_image": "portrait.png",
+  "palette": [
+    "#000000",
+    "#666666",
+    "#ffffff"
+  ],
+  "paint_order": "auto",
+  "export": {
+    "output_dir": "out",
+    "vector_backend": "contours"
+  },
+  "page": {
+    "size": "A4",
+    "orientation": "auto",
+    "margin_mm": 10.0
+  },
+  "cuttability": {
+    "min_feature_mm": 2.0,
+    "min_island_area_mm2": 25.0,
+    "bridge_width_mm": 1.0
+  },
+  "locks": [],
+  "autotune": {
+    "enabled": false
+  },
+  "device": "cpu",
+  "seed": null
+}
