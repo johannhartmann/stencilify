@@ -229,6 +229,23 @@ class PipelineConfig(BaseModel):
         description="Random seed for deterministic results",
     )
 
+    # Compute device
+    device: str = Field(
+        default="cpu",
+        description="Compute device: cpu, cuda, or auto",
+    )
+
+    @field_validator("device")
+    @classmethod
+    def validate_device(cls, v: str) -> str:
+        """Validate device is one of cpu, cuda, or auto."""
+        v_lower = v.lower()
+        if v_lower not in ("cpu", "cuda", "auto"):
+            raise ValueError(
+                f"Invalid device '{v}'. Must be one of: cpu, cuda, auto"
+            )
+        return v_lower
+
     @field_validator("palette")
     @classmethod
     def validate_palette_colors(cls, v: list[str]) -> list[str]:

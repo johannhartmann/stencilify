@@ -20,7 +20,8 @@ dependencies = [
 
 [project.optional-dependencies]
 gpu = [
-    "cupy>=12.0.0",
+    "torch>=2.0.0",
+    "kornia>=0.7.0",
 ]
 
 [project.scripts]

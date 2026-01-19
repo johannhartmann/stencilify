@@ -197,6 +197,14 @@ def generate(
             help="Enable autotune mode",
         ),
     ] = False,
+    device: Annotated[
+        str,
+        typer.Option(
+            "--device",
+            help="Compute device: cpu (default), cuda, or auto",
+            case_sensitive=False,
+        ),
+    ] = "cpu",
     seed: Annotated[
         int | None,
         typer.Option(
@@ -273,6 +281,7 @@ def generate(
             ),
             locks=lock_specs,
             autotune=AutotuneConfig(enabled=autotune),
+            device=device,
             seed=seed,
         )
     except ValidationError as e:
@@ -343,6 +352,7 @@ def config(
             cuttability=CuttabilityConfig(),
             locks=[],
             autotune=AutotuneConfig(),
+            device="cpu",
             seed=None,
         )
 

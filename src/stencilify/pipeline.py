@@ -164,6 +164,12 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
     logger.info("Starting stencilify pipeline")
     logger.info("=" * 60)
 
+    # Determine compute device
+    from stencilify.compute import Device, get_device
+
+    device_str = get_device(Device(config.device))
+    logger.info(f"Compute device: {device_str}")
+
     # Determine resolution
     px_per_mm = 300.0 / 25.4  # 300 DPI
 
