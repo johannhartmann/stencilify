@@ -4,14 +4,81 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 from stencilify.config import PipelineConfig
 from stencilify.geometry import get_page_dimensions
 
 
+def auto_detect_subject(rgb: np.ndarray) -> np.ndarray:
+    """
+    Automatically detect the subject in an RGB image and create an alpha mask.
+
+    Uses a combination of strategies:
+    1. Corner-based background detection
+    2. Threshold-based segmentation (for uniform backgrounds)
+    3. Morphological operations to clean up the mask
+
+    Args:
+        rgb: RGB image array of shape (H, W, 3), uint8
+
+    Returns:
+        Alpha mask of shape (H, W), uint8 (0=transparent, 255=opaque)
+    """
+    from scipy.ndimage import binary_dilation, binary_erosion, binary_fill_holes
+
+    h, w = rgb.shape[:2]
+
+    # Convert to grayscale for analysis
+    gray = np.mean(rgb, axis=2).astype(np.uint8)
+
+    # Strategy 1: Corner-based background detection
+    # Sample corners to detect background color
+    corner_size = max(10, min(h, w) // 20)  # At least 10px, or 5% of image
+    corners = [
+        gray[0:corner_size, 0:corner_size],  # Top-left
+        gray[0:corner_size, -corner_size:],  # Top-right
+        gray[-corner_size:, 0:corner_size],  # Bottom-left
+        gray[-corner_size:, -corner_size:],  # Bottom-right
+    ]
+
+    # Estimate background intensity from corners
+    corner_values = np.concatenate([c.flatten() for c in corners])
+    bg_intensity = np.median(corner_values)
+    bg_std = np.std(corner_values)
+
+    # Create initial mask based on similarity to background
+    # Pixels similar to background are marked as background (0)
+    intensity_diff = np.abs(gray.astype(float) - bg_intensity)
+
+    # More lenient threshold to capture more of the subject
+    threshold = max(15, bg_std * 1.5)  # Lower threshold
+
+    # Initial foreground mask (True = foreground/subject)
+    foreground = intensity_diff > threshold
+
+    # Strategy 2: Morphological cleanup
+    # Remove small noise in background
+    foreground = binary_erosion(foreground, iterations=1)
+
+    # Fill holes in foreground (important for capturing full subject)
+    foreground = binary_fill_holes(foreground)
+
+    # Dilate to recover edges and ensure full coverage
+    foreground = binary_dilation(foreground, iterations=3)
+
+    # Convert to uint8 alpha channel
+    alpha = (foreground * 255).astype(np.uint8)
+
+    return alpha
+
+
 def load_rgba(image_path: Path) -> tuple[np.ndarray, np.ndarray]:
     """
-    Load an RGBA image from disk.
+    Load an RGBA image from disk, or convert RGB to RGBA with automatic subject detection.
+
+    For images without an alpha channel (RGB, L, etc.), this function automatically
+    detects the subject and creates a silhouette mask by analyzing the background.
 
     Args:
         image_path: Path to the input image
@@ -22,7 +89,6 @@ def load_rgba(image_path: Path) -> tuple[np.ndarray, np.ndarray]:
         - alpha: uint8 array of shape (H, W)
 
     Raises:
-        ValueError: If the image does not have an alpha channel
         FileNotFoundError: If the image file does not exist
     """
     if not image_path.exists():
@@ -32,23 +98,25 @@ def load_rgba(image_path: Path) -> tuple[np.ndarray, np.ndarray]:
     img = Image.open(image_path)
 
     # Convert to RGBA if not already
-    if img.mode != "RGBA":
-        # Try to get alpha channel
-        if "transparency" in img.info:
-            img = img.convert("RGBA")  # type: ignore[assignment]
-        else:
-            raise ValueError(
-                f"Input image must have an alpha channel (RGBA). "
-                f"Got mode: {img.mode}. "
-                f"Please provide an image with transparency/alpha channel."
-            )
+    if img.mode == "RGBA":
+        # Already has alpha channel
+        img_array = np.array(img, dtype=np.uint8)
+        rgb = img_array[:, :, :3]
+        alpha = img_array[:, :, 3]
+    elif "transparency" in img.info:
+        # Has transparency info, convert to RGBA
+        img = img.convert("RGBA")  # type: ignore[assignment]
+        img_array = np.array(img, dtype=np.uint8)
+        rgb = img_array[:, :, :3]
+        alpha = img_array[:, :, 3]
+    else:
+        # No alpha channel - automatically detect subject
+        # First convert to RGB if needed (handles grayscale, etc.)
+        img_rgb = img.convert("RGB")  # type: ignore[assignment]
+        rgb = np.array(img_rgb, dtype=np.uint8)
 
-    # Convert to numpy arrays
-    img_array = np.array(img, dtype=np.uint8)
-
-    # Split into RGB and alpha
-    rgb = img_array[:, :, :3]
-    alpha = img_array[:, :, 3]
+        # Automatically detect subject and create alpha mask
+        alpha = auto_detect_subject(rgb)
 
     return rgb, alpha
 
