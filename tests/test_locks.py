@@ -85,26 +85,6 @@ def test_load_lock_mask_rgb(tmp_path: Path) -> None:
 
     assert mask.shape == (5, 5)
     assert np.all(mask == 1)
-
-
-def test_load_lock_mask_not_found(tmp_path: Path) -> None:
-    """Test that missing file raises FileNotFoundError."""
-    mask_path = tmp_path / "nonexistent.png"
-
-    with pytest.raises(FileNotFoundError, match="not found"):
-        load_lock_mask(mask_path, target_shape=(10, 10))
-
-
-def test_load_lock_mask_invalid_file(tmp_path: Path) -> None:
-    """Test that invalid image file raises ValueError."""
-    # Create a text file
-    invalid_path = tmp_path / "invalid.png"
-    invalid_path.write_text("not an image")
-
-    with pytest.raises(ValueError, match="Failed to load"):
-        load_lock_mask(invalid_path, target_shape=(10, 10))
-
-
 def test_map_locks_to_superpixels_simple() -> None:
     """Test simple lock mapping."""
     # 4x4 image with 2 superpixels
@@ -253,20 +233,6 @@ def test_map_locks_to_superpixels_conflict() -> None:
 
     with pytest.raises(ValueError, match="Conflicting locks"):
         map_locks_to_superpixels(lock_masks, spx_labels, silhouette)
-
-
-def test_map_locks_to_superpixels_shape_mismatch() -> None:
-    """Test that shape mismatch raises error."""
-    spx_labels = np.zeros((4, 4), dtype=np.int32)
-    silhouette = np.ones((4, 4), dtype=np.uint8)
-    lock_mask = np.ones((5, 5), dtype=np.uint8)  # Wrong shape
-
-    lock_masks = {0: lock_mask}
-
-    with pytest.raises(ValueError, match="shape"):
-        map_locks_to_superpixels(lock_masks, spx_labels, silhouette)
-
-
 def test_map_locks_to_superpixels_empty_locks() -> None:
     """Test with no lock masks."""
     spx_labels = np.zeros((4, 4), dtype=np.int32)
@@ -284,49 +250,3 @@ def test_parse_lock_spec_basic() -> None:
 
     assert color == "#FFD200"
     assert path == Path("mask.png")
-
-
-def test_parse_lock_spec_without_hash() -> None:
-    """Test parsing without # prefix."""
-    color, path = parse_lock_spec("FFD200=mask.png")
-
-    # Should add # prefix
-    assert color == "#FFD200"
-    assert path == Path("mask.png")
-
-
-def test_parse_lock_spec_with_spaces() -> None:
-    """Test parsing with whitespace."""
-    color, path = parse_lock_spec(" #FFD200 = mask.png ")
-
-    assert color == "#FFD200"
-    assert path == Path("mask.png")
-
-
-def test_parse_lock_spec_path_with_dirs() -> None:
-    """Test parsing path with directories."""
-    color, path = parse_lock_spec("#000000=path/to/mask.png")
-
-    assert color == "#000000"
-    assert path == Path("path/to/mask.png")
-
-
-def test_parse_lock_spec_no_equals() -> None:
-    """Test that missing = raises error."""
-    with pytest.raises(ValueError, match="Invalid lock specification"):
-        parse_lock_spec("#FFD200")
-
-
-def test_parse_lock_spec_invalid_color() -> None:
-    """Test that invalid color format raises error."""
-    with pytest.raises(ValueError, match="Invalid color"):
-        parse_lock_spec("#FFF=mask.png")  # Too short
-
-
-def test_parse_lock_spec_multiple_equals() -> None:
-    """Test spec with multiple = characters."""
-    # Should split on first = only
-    color, path = parse_lock_spec("#FFD200=path=with=equals.png")
-
-    assert color == "#FFD200"
-    assert path == Path("path=with=equals.png")

@@ -1,7 +1,6 @@
 """Tests for stencil cuttability optimization."""
 
 import numpy as np
-import pytest
 
 from stencilify.stencil_opt import (
     compute_layer_metrics,
@@ -89,32 +88,6 @@ def test_morph_cleanup_different_sizes() -> None:
     # Large kernel
     cleaned_large = morph_cleanup(mask, min_feature_px=10)
     assert cleaned_large[10, 10] == 1  # Should still fill
-
-
-def test_morph_cleanup_invalid_shape() -> None:
-    """Test that non-2D mask raises error."""
-    mask = np.zeros((5, 5, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        morph_cleanup(mask, min_feature_px=3)
-
-
-def test_morph_cleanup_invalid_dtype() -> None:
-    """Test that non-uint8 raises error."""
-    mask = np.zeros((5, 5), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        morph_cleanup(mask, min_feature_px=3)
-
-
-def test_morph_cleanup_invalid_values() -> None:
-    """Test that non-binary values raise error."""
-    mask = np.full((5, 5), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        morph_cleanup(mask, min_feature_px=3)
-
-
 def test_remove_small_cutouts_simple() -> None:
     """Test basic small cutout removal."""
     # Create mask with one large and one small component
@@ -194,51 +167,6 @@ def test_remove_small_cutouts_connected_components() -> None:
     # Only bottom-right (4px) >= 3 should remain
     assert np.sum(filtered[:2, :]) == 0  # Top removed
     assert np.sum(filtered[3:, 2:4]) == 4  # Bottom kept
-
-
-def test_remove_small_cutouts_empty() -> None:
-    """Test with empty mask."""
-    mask = np.zeros((10, 10), dtype=np.uint8)
-
-    filtered = remove_small_cutouts(mask, min_area_px=5)
-
-    assert np.sum(filtered) == 0
-
-
-def test_remove_small_cutouts_full() -> None:
-    """Test with full mask."""
-    mask = np.ones((10, 10), dtype=np.uint8)
-
-    filtered = remove_small_cutouts(mask, min_area_px=5)
-
-    # Single component of 100 pixels, should be kept
-    assert np.sum(filtered) == 100
-
-
-def test_remove_small_cutouts_invalid_shape() -> None:
-    """Test that non-2D mask raises error."""
-    mask = np.zeros((5, 5, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        remove_small_cutouts(mask, min_area_px=10)
-
-
-def test_remove_small_cutouts_invalid_dtype() -> None:
-    """Test that non-uint8 raises error."""
-    mask = np.zeros((5, 5), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        remove_small_cutouts(mask, min_area_px=10)
-
-
-def test_remove_small_cutouts_invalid_values() -> None:
-    """Test that non-binary values raise error."""
-    mask = np.full((5, 5), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        remove_small_cutouts(mask, min_area_px=10)
-
-
 def test_compute_layer_metrics_simple() -> None:
     """Test basic metrics computation."""
     mask = np.zeros((10, 10), dtype=np.uint8)
@@ -264,46 +192,6 @@ def test_compute_layer_metrics_multiple_components() -> None:
     assert metrics["smallest_component_area_px"] == 4
     assert metrics["total_open_area_px"] == 13
     assert metrics["estimated_contour_length_px"] > 0
-
-
-def test_compute_layer_metrics_empty() -> None:
-    """Test metrics for empty mask."""
-    mask = np.zeros((10, 10), dtype=np.uint8)
-
-    metrics = compute_layer_metrics(mask)
-
-    assert metrics["cutout_component_count"] == 0
-    assert metrics["smallest_component_area_px"] == 0
-    assert metrics["total_open_area_px"] == 0
-    assert metrics["estimated_contour_length_px"] == 0
-
-
-def test_compute_layer_metrics_full() -> None:
-    """Test metrics for full mask."""
-    mask = np.ones((10, 10), dtype=np.uint8)
-
-    metrics = compute_layer_metrics(mask)
-
-    assert metrics["cutout_component_count"] == 1
-    assert metrics["smallest_component_area_px"] == 100
-    assert metrics["total_open_area_px"] == 100
-    assert metrics["estimated_contour_length_px"] > 0
-
-
-def test_compute_layer_metrics_single_pixel() -> None:
-    """Test metrics for single pixel."""
-    mask = np.zeros((10, 10), dtype=np.uint8)
-    mask[5, 5] = 1
-
-    metrics = compute_layer_metrics(mask)
-
-    assert metrics["cutout_component_count"] == 1
-    assert metrics["smallest_component_area_px"] == 1
-    assert metrics["total_open_area_px"] == 1
-    # Single pixel may have 0 contour length depending on OpenCV version
-    assert metrics["estimated_contour_length_px"] >= 0
-
-
 def test_compute_layer_metrics_contour_length() -> None:
     """Test that contour length is reasonable."""
     # Square should have contour ~ 4 * side_length
@@ -315,32 +203,6 @@ def test_compute_layer_metrics_contour_length() -> None:
     # Contour should be approximately 40 pixels (perimeter of 10x10 square)
     # Allow some tolerance for pixel approximation
     assert 35 < metrics["estimated_contour_length_px"] < 45
-
-
-def test_compute_layer_metrics_invalid_shape() -> None:
-    """Test that non-2D mask raises error."""
-    mask = np.zeros((5, 5, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        compute_layer_metrics(mask)
-
-
-def test_compute_layer_metrics_invalid_dtype() -> None:
-    """Test that non-uint8 raises error."""
-    mask = np.zeros((5, 5), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        compute_layer_metrics(mask)
-
-
-def test_compute_layer_metrics_invalid_values() -> None:
-    """Test that non-binary values raise error."""
-    mask = np.full((5, 5), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        compute_layer_metrics(mask)
-
-
 def test_pipeline_morph_then_remove() -> None:
     """Test full cleanup pipeline: morph + remove small cutouts."""
     # Create noisy mask

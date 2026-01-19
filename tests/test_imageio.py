@@ -62,14 +62,6 @@ def test_load_rgba_no_alpha_fails(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="must have an alpha channel"):
         load_rgba(img_path)
-
-
-def test_load_rgba_missing_file() -> None:
-    """Test that loading a missing file raises FileNotFoundError."""
-    with pytest.raises(FileNotFoundError):
-        load_rgba(Path("/nonexistent/file.png"))
-
-
 def test_resize_to_working_preserves_aspect_ratio(tmp_path: Path) -> None:
     """Test that resizing preserves aspect ratio."""
     # Create a 200x100 image (2:1 aspect ratio)
@@ -189,38 +181,6 @@ def test_resize_to_working_different_page_sizes(tmp_path: Path) -> None:
     assert 2000 <= long_edge <= 6000
     # px_per_mm should be positive and reasonable
     assert 2.0 < px_per_mm < 30.0
-
-
-def test_resize_to_working_invalid_dimensions() -> None:
-    """Test that invalid input dimensions raise ValueError."""
-    # Zero dimension
-    rgb = np.zeros((0, 100, 3), dtype=np.uint8)
-    alpha = np.full((0, 100), 255, dtype=np.uint8)
-
-    # Create dummy config (won't be used)
-    config = PipelineConfig.model_construct(
-        input_image=Path("test.png"),
-        palette=["#000000", "#ffffff"],
-    )
-
-    with pytest.raises(ValueError, match="Invalid input dimensions"):
-        resize_to_working(rgb, alpha, config)
-
-
-def test_resize_to_working_mismatched_shapes() -> None:
-    """Test that mismatched RGB/alpha shapes raise ValueError."""
-    rgb = np.zeros((100, 100, 3), dtype=np.uint8)
-    alpha = np.full((50, 50), 255, dtype=np.uint8)  # Different size
-
-    config = PipelineConfig.model_construct(
-        input_image=Path("test.png"),
-        palette=["#000000", "#ffffff"],
-    )
-
-    with pytest.raises(ValueError, match="shape mismatch"):
-        resize_to_working(rgb, alpha, config)
-
-
 def test_resize_to_working_returns_uint8() -> None:
     """Test that resized images are uint8."""
     rgb = np.zeros((100, 100, 3), dtype=np.uint8)

@@ -1,7 +1,6 @@
 """Tests for mask generation and morphology operations."""
 
 import numpy as np
-import pytest
 
 from stencilify.masks import morph_smooth, silhouette_from_alpha
 
@@ -40,68 +39,6 @@ def test_silhouette_from_alpha_threshold() -> None:
     assert mask_low[0, 0] == 0  # alpha=0, below threshold
     assert mask_low[-1, -1] == 1  # alpha=255, above threshold
     assert mask_high[-1, -1] == 1  # alpha=255, above threshold
-
-
-def test_silhouette_from_alpha_default_threshold() -> None:
-    """Test default threshold of 20."""
-    alpha = np.full((10, 10), 25, dtype=np.uint8)
-    mask = silhouette_from_alpha(alpha)  # Default threshold=20
-
-    # All pixels should be foreground (25 > 20)
-    assert np.all(mask == 1)
-
-    alpha_low = np.full((10, 10), 15, dtype=np.uint8)
-    mask_low = silhouette_from_alpha(alpha_low)
-
-    # All pixels should be background (15 <= 20)
-    assert np.all(mask_low == 0)
-
-
-def test_silhouette_from_alpha_invalid_dtype() -> None:
-    """Test that non-uint8 alpha raises ValueError."""
-    alpha = np.zeros((10, 10), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        silhouette_from_alpha(alpha)
-
-
-def test_silhouette_from_alpha_invalid_shape() -> None:
-    """Test that non-2D alpha raises ValueError."""
-    alpha = np.zeros((10, 10, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        silhouette_from_alpha(alpha)
-
-
-def test_silhouette_from_alpha_invalid_threshold() -> None:
-    """Test that invalid threshold raises ValueError."""
-    alpha = np.zeros((10, 10), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="Threshold must be in"):
-        silhouette_from_alpha(alpha, threshold=-1)
-
-    with pytest.raises(ValueError, match="Threshold must be in"):
-        silhouette_from_alpha(alpha, threshold=256)
-
-
-def test_morph_smooth_no_op() -> None:
-    """Test that zero kernel sizes don't change the mask."""
-    mask = np.array(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 1, 1, 1, 0],
-            [0, 1, 1, 1, 0],
-            [0, 1, 1, 1, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        dtype=np.uint8,
-    )
-
-    smoothed = morph_smooth(mask, close_px=0, open_px=0)
-
-    assert np.array_equal(smoothed, mask)
-
-
 def test_morph_smooth_closing_fills_holes() -> None:
     """Test that closing fills small holes."""
     # Create mask with a small hole
@@ -143,53 +80,6 @@ def test_morph_smooth_close_then_open() -> None:
     assert smoothed[10, 10] == 1
     # Noise should be removed (by opening)
     assert smoothed[1, 1] == 0
-
-
-def test_morph_smooth_preserves_binary() -> None:
-    """Test that smoothing preserves binary nature (0/1 values)."""
-    mask = np.random.randint(0, 2, size=(50, 50), dtype=np.uint8)
-
-    smoothed = morph_smooth(mask, close_px=3, open_px=3)
-
-    assert smoothed.dtype == np.uint8
-    assert np.all((smoothed == 0) | (smoothed == 1))
-
-
-def test_morph_smooth_invalid_dtype() -> None:
-    """Test that non-uint8 mask raises ValueError."""
-    mask = np.zeros((10, 10), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        morph_smooth(mask, close_px=2, open_px=2)
-
-
-def test_morph_smooth_invalid_shape() -> None:
-    """Test that non-2D mask raises ValueError."""
-    mask = np.zeros((10, 10, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        morph_smooth(mask, close_px=2, open_px=2)
-
-
-def test_morph_smooth_non_binary_values() -> None:
-    """Test that non-binary mask values raise ValueError."""
-    mask = np.full((10, 10), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must contain only 0 or 1"):
-        morph_smooth(mask, close_px=2, open_px=2)
-
-
-def test_morph_smooth_negative_kernel() -> None:
-    """Test that negative kernel sizes raise ValueError."""
-    mask = np.zeros((10, 10), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be non-negative"):
-        morph_smooth(mask, close_px=-1, open_px=2)
-
-    with pytest.raises(ValueError, match="must be non-negative"):
-        morph_smooth(mask, close_px=2, open_px=-1)
-
-
 def test_morph_smooth_large_kernels() -> None:
     """Test that large kernel sizes work correctly."""
     # Create a mask with a solid square

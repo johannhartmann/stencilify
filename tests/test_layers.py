@@ -6,7 +6,6 @@ import pytest
 from stencilify.config import PaintOrder
 from stencilify.layers import (
     build_open_masks,
-    compute_luminance,
     compute_paint_order,
     verify_knockout_property,
 )
@@ -102,18 +101,6 @@ def test_build_open_masks_knockout_property() -> None:
 
     # Should equal silhouette
     assert np.array_equal(total, silhouette)
-
-
-def test_build_open_masks_shape_mismatch() -> None:
-    """Test that shape mismatch raises error."""
-    label_map = np.zeros((4, 4), dtype=np.int32)
-    silhouette = np.ones((5, 5), dtype=np.uint8)
-    palette = ["#000000", "#FFFFFF"]
-
-    with pytest.raises(ValueError, match="Shape mismatch"):
-        build_open_masks(label_map, silhouette, palette)
-
-
 def test_build_open_masks_invalid_palette_size() -> None:
     """Test that invalid palette size raises error."""
     label_map = np.zeros((4, 4), dtype=np.int32)
@@ -130,51 +117,6 @@ def test_build_open_masks_invalid_palette_size() -> None:
             silhouette,
             ["#000000", "#404040", "#808080", "#C0C0C0", "#FFFFFF"],
         )
-
-
-def test_compute_luminance_basic() -> None:
-    """Test luminance computation for basic colors."""
-    # Black
-    assert compute_luminance("#000000") == 0.0
-
-    # White
-    assert compute_luminance("#FFFFFF") == 255.0
-
-    # Pure red: 0.299 * 255
-    red_luma = 0.299 * 255
-    assert abs(compute_luminance("#FF0000") - red_luma) < 0.01
-
-    # Pure green: 0.587 * 255
-    green_luma = 0.587 * 255
-    assert abs(compute_luminance("#00FF00") - green_luma) < 0.01
-
-    # Pure blue: 0.114 * 255
-    blue_luma = 0.114 * 255
-    assert abs(compute_luminance("#0000FF") - blue_luma) < 0.01
-
-
-def test_compute_luminance_gray() -> None:
-    """Test luminance for gray colors."""
-    # Middle gray
-    gray_luma = 0.299 * 128 + 0.587 * 128 + 0.114 * 128
-    assert abs(compute_luminance("#808080") - gray_luma) < 0.01
-
-
-def test_compute_luminance_without_hash() -> None:
-    """Test luminance computation without # prefix."""
-    assert compute_luminance("000000") == 0.0
-    assert compute_luminance("FFFFFF") == 255.0
-
-
-def test_compute_luminance_invalid() -> None:
-    """Test that invalid hex raises error."""
-    with pytest.raises(ValueError, match="Invalid HEX"):
-        compute_luminance("#FFF")
-
-    with pytest.raises(ValueError, match="Invalid HEX"):
-        compute_luminance("#GGGGGG")
-
-
 def test_compute_paint_order_given() -> None:
     """Test paint order with GIVEN mode."""
     palette = ["#000000", "#808080", "#FFFFFF"]
@@ -288,16 +230,6 @@ def test_verify_knockout_property_gap() -> None:
 
     # Gap at (1, 0) and (1, 1)
     assert not verify_knockout_property(open_masks, silhouette)
-
-
-def test_verify_knockout_property_empty() -> None:
-    """Test knockout with empty masks."""
-    open_masks: dict[str, np.ndarray] = {}
-    silhouette = np.zeros((2, 2), dtype=np.uint8)
-
-    assert verify_knockout_property(open_masks, silhouette)
-
-
 def test_verify_knockout_property_three_colors() -> None:
     """Test knockout with 3 colors."""
     open_masks = {

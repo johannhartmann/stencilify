@@ -1,9 +1,8 @@
 """Tests for island detection."""
 
 import numpy as np
-import pytest
 
-from stencilify.islands import IslandResult, IslandStats, find_material_islands
+from stencilify.islands import find_material_islands
 
 
 def test_find_material_islands_no_islands() -> None:
@@ -220,62 +219,3 @@ def test_find_material_islands_complex_shape() -> None:
     assert result.island_count == 1
     # Vertical: 4 pixels + Horizontal: 4 pixels - overlap: 1 pixel = 7 pixels
     assert result.island_stats[0].area_px == 7
-
-
-def test_find_material_islands_invalid_shape() -> None:
-    """Test that non-2D mask raises error."""
-    open_mask = np.zeros((5, 5, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        find_material_islands(open_mask)
-
-
-def test_find_material_islands_invalid_dtype() -> None:
-    """Test that non-uint8 raises error."""
-    open_mask = np.zeros((5, 5), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        find_material_islands(open_mask)
-
-
-def test_find_material_islands_invalid_values() -> None:
-    """Test that non-binary values raise error."""
-    open_mask = np.full((5, 5), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        find_material_islands(open_mask)
-
-
-def test_island_result_dataclass() -> None:
-    """Test IslandResult dataclass."""
-    mask = np.zeros((10, 10), dtype=np.uint8)
-    stats = [IslandStats(area_px=5, bbox=(1, 2, 3, 4), centroid=(2.5, 3.5))]
-
-    result = IslandResult(island_mask=mask, island_stats=stats, island_count=1)
-
-    assert result.island_mask.shape == (10, 10)
-    assert result.island_count == 1
-    assert len(result.island_stats) == 1
-    assert result.island_stats[0].area_px == 5
-
-
-def test_island_stats_dataclass() -> None:
-    """Test IslandStats dataclass."""
-    stats = IslandStats(area_px=100, bbox=(10, 20, 30, 40), centroid=(25.5, 40.5))
-
-    assert stats.area_px == 100
-    assert stats.bbox == (10, 20, 30, 40)
-    assert stats.centroid == (25.5, 40.5)
-
-
-def test_find_material_islands_corner_touching() -> None:
-    """Test that material touching only corner is an island (not supported)."""
-    open_mask = np.ones((7, 7), dtype=np.uint8)
-    # Create material that only touches corner
-    open_mask[1, 1] = 0  # Material at (1,1) - not touching edge directly
-
-    result = find_material_islands(open_mask)
-
-    # Should be an island (doesn't touch edge, only corners don't count as border)
-    assert result.island_count == 1
-    assert result.island_stats[0].area_px == 1

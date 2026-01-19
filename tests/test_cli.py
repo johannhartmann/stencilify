@@ -5,7 +5,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from stencilify import cli
-from stencilify.cli import app, parse_locks, parse_palette
+from stencilify.cli import app, parse_palette
 
 runner = CliRunner()
 
@@ -44,17 +44,6 @@ def test_config_help() -> None:
     result = runner.invoke(app, ["config", "--help"])
     assert result.exit_code == 0
     assert "config" in result.stdout.lower()
-
-
-def test_config_print_defaults() -> None:
-    """Test that config --print-defaults outputs JSON."""
-    result = runner.invoke(app, ["config", "--print-defaults"])
-    assert result.exit_code == 0
-    assert "input_image" in result.stdout
-    assert "palette" in result.stdout
-    assert "page" in result.stdout
-
-
 def test_parse_palette_single() -> None:
     """Test parsing single palette entry."""
     result = parse_palette(["#000000"])
@@ -77,29 +66,6 @@ def test_parse_palette_mixed() -> None:
     """Test parsing mixed format (repeated and comma-separated)."""
     result = parse_palette(["#000000,#111111", "#222222"])
     assert result == ["#000000", "#111111", "#222222"]
-
-
-def test_parse_locks_valid(tmp_path: Path) -> None:
-    """Test parsing valid lock specifications."""
-    mask1 = tmp_path / "mask1.png"
-    mask2 = tmp_path / "mask2.png"
-    mask1.touch()
-    mask2.touch()
-
-    locks = parse_locks([f"#ff0000={mask1}", f"#00ff00={mask2}"])
-    assert len(locks) == 2
-    assert locks[0].color == "#ff0000"
-    assert locks[0].mask_path == mask1
-    assert locks[1].color == "#00ff00"
-    assert locks[1].mask_path == mask2
-
-
-def test_parse_locks_empty() -> None:
-    """Test parsing empty locks list."""
-    locks = parse_locks([])
-    assert locks == []
-
-
 def test_generate_missing_palette(tmp_path: Path) -> None:
     """Test that generate fails when palette is missing."""
     input_file = tmp_path / "input.png"

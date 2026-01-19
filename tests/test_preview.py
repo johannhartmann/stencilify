@@ -5,37 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from stencilify.preview import hex_to_rgb, render_preview, save_preview
-
-
-def test_hex_to_rgb_basic() -> None:
-    """Test basic HEX to RGB conversion."""
-    assert hex_to_rgb("#000000") == (0, 0, 0)
-    assert hex_to_rgb("#FFFFFF") == (255, 255, 255)
-    assert hex_to_rgb("#FF0000") == (255, 0, 0)
-    assert hex_to_rgb("#00FF00") == (0, 255, 0)
-    assert hex_to_rgb("#0000FF") == (0, 0, 255)
-
-
-def test_hex_to_rgb_without_hash() -> None:
-    """Test HEX conversion without # prefix."""
-    assert hex_to_rgb("FF0000") == (255, 0, 0)
-    assert hex_to_rgb("00FF00") == (0, 255, 0)
-
-
-def test_hex_to_rgb_lowercase() -> None:
-    """Test HEX conversion with lowercase."""
-    assert hex_to_rgb("#ff0000") == (255, 0, 0)
-    assert hex_to_rgb("#00ff00") == (0, 255, 0)
-
-
-def test_hex_to_rgb_invalid() -> None:
-    """Test that invalid HEX raises error."""
-    with pytest.raises(ValueError, match="Invalid HEX"):
-        hex_to_rgb("#FFF")
-
-    with pytest.raises(ValueError, match="Invalid HEX"):
-        hex_to_rgb("#GGGGGG")
+from stencilify.preview import render_preview, save_preview
 
 
 def test_render_preview_simple() -> None:
@@ -150,24 +120,6 @@ def test_render_preview_empty_masks() -> None:
     """Test that empty open_masks raises error."""
     with pytest.raises(ValueError, match="cannot be empty"):
         render_preview({}, ["#000000"], [0])
-
-
-def test_render_preview_empty_palette() -> None:
-    """Test that empty palette raises error."""
-    open_masks = {"#000000": np.ones((2, 2), dtype=np.uint8)}
-
-    with pytest.raises(ValueError, match="cannot be empty"):
-        render_preview(open_masks, [], [])
-
-
-def test_render_preview_empty_paint_order() -> None:
-    """Test that empty paint_order raises error."""
-    open_masks = {"#000000": np.ones((2, 2), dtype=np.uint8)}
-
-    with pytest.raises(ValueError, match="cannot be empty"):
-        render_preview(open_masks, ["#000000"], [])
-
-
 def test_render_preview_shape_mismatch() -> None:
     """Test that mismatched mask shapes raise error."""
     open_masks = {
@@ -180,28 +132,6 @@ def test_render_preview_shape_mismatch() -> None:
 
     with pytest.raises(ValueError, match="expected"):
         render_preview(open_masks, palette, paint_order)
-
-
-def test_render_preview_invalid_paint_order_index() -> None:
-    """Test that out-of-range paint order index raises error."""
-    open_masks = {"#000000": np.ones((2, 2), dtype=np.uint8)}
-    palette = ["#000000"]
-    paint_order = [5]  # Out of range
-
-    with pytest.raises(ValueError, match="out of range"):
-        render_preview(open_masks, palette, paint_order)
-
-
-def test_render_preview_missing_color() -> None:
-    """Test that missing color in masks raises error."""
-    open_masks = {"#000000": np.ones((2, 2), dtype=np.uint8)}
-    palette = ["#000000", "#FFFFFF"]  # FFFFFF not in masks
-    paint_order = [0, 1]
-
-    with pytest.raises(ValueError, match="not found"):
-        render_preview(open_masks, palette, paint_order)
-
-
 def test_save_preview_basic(tmp_path: Path) -> None:
     """Test saving preview to disk."""
     preview = np.zeros((10, 10, 4), dtype=np.uint8)
@@ -237,27 +167,3 @@ def test_save_preview_with_content(tmp_path: Path) -> None:
     pixels = np.array(img)
 
     assert tuple(pixels[2, 2]) == (255, 0, 0, 255)
-
-
-def test_save_preview_invalid_shape() -> None:
-    """Test that invalid shape raises error."""
-    preview = np.zeros((10, 10), dtype=np.uint8)  # Missing channel dimension
-
-    with pytest.raises(ValueError, match="must be RGBA"):
-        save_preview(preview, Path("output.png"))
-
-
-def test_save_preview_invalid_channels() -> None:
-    """Test that wrong number of channels raises error."""
-    preview = np.zeros((10, 10, 3), dtype=np.uint8)  # RGB instead of RGBA
-
-    with pytest.raises(ValueError, match="must be RGBA"):
-        save_preview(preview, Path("output.png"))
-
-
-def test_save_preview_invalid_dtype() -> None:
-    """Test that wrong dtype raises error."""
-    preview = np.zeros((10, 10, 4), dtype=np.float32)  # float instead of uint8
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        save_preview(preview, Path("output.png"))

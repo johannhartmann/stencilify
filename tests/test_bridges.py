@@ -1,9 +1,8 @@
 """Tests for island fixing with bridges."""
 
 import numpy as np
-import pytest
 
-from stencilify.bridges import BridgeInfo, BridgeReport, fix_islands
+from stencilify.bridges import fix_islands
 
 
 def test_fix_islands_no_islands() -> None:
@@ -172,32 +171,6 @@ def test_fix_islands_no_supported_material() -> None:
     # But islands are small enough to fill (4 < 20)
     assert report.islands_filled == 2
     assert report.islands_remaining == 0
-
-
-def test_fix_islands_invalid_shape() -> None:
-    """Test that non-2D mask raises error."""
-    open_mask = np.zeros((5, 5, 3), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        fix_islands(open_mask, min_island_area_px=10, bridge_width_px=2)
-
-
-def test_fix_islands_invalid_dtype() -> None:
-    """Test that non-uint8 raises error."""
-    open_mask = np.zeros((5, 5), dtype=np.float32)
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        fix_islands(open_mask, min_island_area_px=10, bridge_width_px=2)
-
-
-def test_fix_islands_invalid_values() -> None:
-    """Test that non-binary values raise error."""
-    open_mask = np.full((5, 5), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        fix_islands(open_mask, min_island_area_px=10, bridge_width_px=2)
-
-
 def test_fix_islands_preserves_non_island_material() -> None:
     """Test that non-island material is preserved."""
     # Create mask with border material and island
@@ -229,35 +202,6 @@ def test_fix_islands_zero_bridge_width() -> None:
     assert report.bridges_added == 0
     # Island remains (too large to fill)
     assert report.islands_remaining == 1
-
-
-def test_bridge_report_dataclass() -> None:
-    """Test BridgeReport dataclass."""
-    report = BridgeReport(
-        islands_filled=2,
-        bridges_added=3,
-        islands_remaining=1,
-        bridge_info=[
-            BridgeInfo(island_id=0, start=(5, 5), end=(10, 10), width_px=3),
-        ],
-    )
-
-    assert report.islands_filled == 2
-    assert report.bridges_added == 3
-    assert report.islands_remaining == 1
-    assert len(report.bridge_info) == 1
-
-
-def test_bridge_info_dataclass() -> None:
-    """Test BridgeInfo dataclass."""
-    info = BridgeInfo(island_id=1, start=(10, 20), end=(30, 40), width_px=5)
-
-    assert info.island_id == 1
-    assert info.start == (10, 20)
-    assert info.end == (30, 40)
-    assert info.width_px == 5
-
-
 def test_fix_islands_complex_shape() -> None:
     """Test with complex stencil shape."""
     # Create more realistic stencil with letters

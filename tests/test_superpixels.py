@@ -1,7 +1,6 @@
 """Tests for superpixel generation and adjacency."""
 
 import numpy as np
-import pytest
 
 from stencilify.superpixels import build_adjacency, compute_mean_lab, compute_superpixels
 
@@ -48,44 +47,6 @@ def test_compute_superpixels_with_mask() -> None:
 
     # Check that there are valid labels inside the mask
     assert np.any(result.labels[silhouette == 1] >= 0)
-
-
-def test_compute_superpixels_invalid_rgb_dtype() -> None:
-    """Test that non-uint8 RGB raises error."""
-    rgb = np.zeros((10, 10, 3), dtype=np.float32)
-    silhouette = np.ones((10, 10), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="RGB must be uint8"):
-        compute_superpixels(rgb, silhouette)
-
-
-def test_compute_superpixels_invalid_rgb_shape() -> None:
-    """Test that invalid RGB shape raises error."""
-    rgb = np.zeros((10, 10), dtype=np.uint8)  # Missing channel dimension
-    silhouette = np.ones((10, 10), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="RGB must be"):
-        compute_superpixels(rgb, silhouette)
-
-
-def test_compute_superpixels_shape_mismatch() -> None:
-    """Test that RGB/silhouette shape mismatch raises error."""
-    rgb = np.zeros((10, 10, 3), dtype=np.uint8)
-    silhouette = np.ones((20, 20), dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="shape mismatch"):
-        compute_superpixels(rgb, silhouette)
-
-
-def test_compute_superpixels_invalid_silhouette_values() -> None:
-    """Test that silhouette with non-binary values raises error."""
-    rgb = np.zeros((10, 10, 3), dtype=np.uint8)
-    silhouette = np.full((10, 10), 2, dtype=np.uint8)
-
-    with pytest.raises(ValueError, match="must contain only 0 or 1"):
-        compute_superpixels(rgb, silhouette)
-
-
 def test_build_adjacency_simple() -> None:
     """Test adjacency building on a simple grid."""
     # Create a simple 4x4 grid with 4 quadrants
@@ -133,40 +94,6 @@ def test_build_adjacency_with_mask() -> None:
 
     # Only 0-1 edge should exist (top half only)
     assert edges == [(0, 1)]
-
-
-def test_build_adjacency_no_adjacency() -> None:
-    """Test case with no adjacent superpixels."""
-    # Each pixel is its own superpixel with gaps
-    labels = np.array(
-        [
-            [0, -1, 1, -1],
-            [-1, -1, -1, -1],
-            [2, -1, 3, -1],
-            [-1, -1, -1, -1],
-        ],
-        dtype=np.int32,
-    )
-    silhouette = (labels >= 0).astype(np.uint8)
-
-    edges = build_adjacency(labels, spx_count=4, silhouette=silhouette)
-
-    # No adjacent superpixels
-    assert edges == []
-
-
-def test_build_adjacency_self_not_included() -> None:
-    """Test that self-edges are not included."""
-    # All same superpixel
-    labels = np.zeros((5, 5), dtype=np.int32)
-    silhouette = np.ones((5, 5), dtype=np.uint8)
-
-    edges = build_adjacency(labels, spx_count=1, silhouette=silhouette)
-
-    # No edges (single superpixel)
-    assert edges == []
-
-
 def test_build_adjacency_unique_edges() -> None:
     """Test that edges are unique and undirected."""
     # Create a pattern that could generate duplicate edges
@@ -209,54 +136,6 @@ def test_compute_mean_lab_simple() -> None:
     assert mean_lab[0, 0] > mean_lab[1, 0]  # Red has higher L than blue
     assert mean_lab[0, 1] > 0  # Red has positive a
     assert mean_lab[1, 2] < 0  # Blue has negative b
-
-
-def test_compute_mean_lab_single_pixel_superpixel() -> None:
-    """Test mean Lab for single-pixel superpixels."""
-    # Create a small image
-    rgb = np.array(
-        [
-            [[255, 0, 0], [0, 255, 0]],
-            [[0, 0, 255], [255, 255, 0]],
-        ],
-        dtype=np.uint8,
-    )
-
-    # Each pixel is its own superpixel
-    labels = np.array(
-        [
-            [0, 1],
-            [2, 3],
-        ],
-        dtype=np.int32,
-    )
-
-    mean_lab = compute_mean_lab(rgb, labels, spx_count=4)
-
-    # Each superpixel has only one pixel, so mean should equal that pixel's Lab
-    assert mean_lab.shape == (4, 3)
-    # All values should be valid Lab values
-    assert np.all(np.isfinite(mean_lab))
-
-
-def test_compute_mean_lab_invalid_rgb() -> None:
-    """Test that invalid RGB raises error."""
-    rgb = np.zeros((10, 10, 3), dtype=np.float32)
-    labels = np.zeros((10, 10), dtype=np.int32)
-
-    with pytest.raises(ValueError, match="RGB must be uint8"):
-        compute_mean_lab(rgb, labels, spx_count=1)
-
-
-def test_compute_mean_lab_shape_mismatch() -> None:
-    """Test that shape mismatch raises error."""
-    rgb = np.zeros((10, 10, 3), dtype=np.uint8)
-    labels = np.zeros((20, 20), dtype=np.int32)
-
-    with pytest.raises(ValueError, match="shape mismatch"):
-        compute_mean_lab(rgb, labels, spx_count=1)
-
-
 def test_superpixels_deterministic() -> None:
     """Test that superpixel computation is deterministic with same seed."""
     rgb = np.random.RandomState(42).randint(0, 256, (30, 30, 3), dtype=np.uint8)

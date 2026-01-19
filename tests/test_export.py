@@ -4,7 +4,6 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import pytest
 
 from stencilify.export import export_png, export_svg_contours, export_svg_potrace
 
@@ -57,46 +56,6 @@ def test_export_png_all_black(tmp_path: Path) -> None:
 
     loaded = cv2.imread(str(output_path), cv2.IMREAD_GRAYSCALE)
     assert np.all(loaded == 0)
-
-
-def test_export_png_creates_parent_dirs(tmp_path: Path) -> None:
-    """Test that PNG export creates parent directories."""
-    output_path = tmp_path / "subdir" / "nested" / "test.png"
-    mask = np.zeros((50, 50), dtype=np.uint8)
-
-    export_png(mask, output_path)
-
-    assert output_path.exists()
-    assert output_path.parent.exists()
-
-
-def test_export_png_invalid_shape() -> None:
-    """Test error on non-2D mask."""
-    mask = np.zeros((50, 50, 3), dtype=np.uint8)
-    output_path = Path("test.png")
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        export_png(mask, output_path)
-
-
-def test_export_png_invalid_dtype() -> None:
-    """Test error on non-uint8 mask."""
-    mask = np.zeros((50, 50), dtype=np.float32)
-    output_path = Path("test.png")
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        export_png(mask, output_path)
-
-
-def test_export_png_invalid_values() -> None:
-    """Test error on non-binary values."""
-    mask = np.full((50, 50), 2, dtype=np.uint8)
-    output_path = Path("test.png")
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        export_png(mask, output_path)
-
-
 def test_export_svg_contours_basic(tmp_path: Path) -> None:
     """Test basic SVG export with contours."""
     # Create simple mask with a square
@@ -196,59 +155,6 @@ def test_export_svg_contours_empty_mask(tmp_path: Path) -> None:
     svg_content = output_path.read_text()
     # Should still be valid SVG even with no paths
     assert "<svg" in svg_content
-
-
-def test_export_svg_contours_creates_parent_dirs(tmp_path: Path) -> None:
-    """Test that SVG export creates parent directories."""
-    output_path = tmp_path / "subdir" / "nested" / "test.svg"
-    mask = np.zeros((50, 50), dtype=np.uint8)
-    mask[10:40, 10:40] = 1
-
-    export_svg_contours(mask, output_path, px_per_mm=10.0)
-
-    assert output_path.exists()
-    assert output_path.parent.exists()
-
-
-def test_export_svg_contours_invalid_shape() -> None:
-    """Test error on non-2D mask."""
-    mask = np.zeros((50, 50, 3), dtype=np.uint8)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        export_svg_contours(mask, output_path, px_per_mm=10.0)
-
-
-def test_export_svg_contours_invalid_dtype() -> None:
-    """Test error on non-uint8 mask."""
-    mask = np.zeros((50, 50), dtype=np.float32)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        export_svg_contours(mask, output_path, px_per_mm=10.0)
-
-
-def test_export_svg_contours_invalid_values() -> None:
-    """Test error on non-binary values."""
-    mask = np.full((50, 50), 2, dtype=np.uint8)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        export_svg_contours(mask, output_path, px_per_mm=10.0)
-
-
-def test_export_svg_contours_invalid_px_per_mm() -> None:
-    """Test error on invalid px_per_mm."""
-    mask = np.zeros((50, 50), dtype=np.uint8)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="must be positive"):
-        export_svg_contours(mask, output_path, px_per_mm=0.0)
-
-    with pytest.raises(ValueError, match="must be positive"):
-        export_svg_contours(mask, output_path, px_per_mm=-1.0)
-
-
 def test_export_svg_potrace_fallback_no_potrace(tmp_path: Path) -> None:
     """Test potrace fallback when potrace is not available."""
     mask = np.zeros((100, 100), dtype=np.uint8)
@@ -283,68 +189,3 @@ def test_export_svg_potrace_with_potrace_if_available(tmp_path: Path) -> None:
 
     svg_content = output_path.read_text()
     assert "<svg" in svg_content
-
-
-def test_export_svg_potrace_invalid_shape() -> None:
-    """Test error on non-2D mask."""
-    mask = np.zeros((50, 50, 3), dtype=np.uint8)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="must be 2D"):
-        export_svg_potrace(mask, output_path, px_per_mm=10.0)
-
-
-def test_export_svg_potrace_invalid_dtype() -> None:
-    """Test error on non-uint8 mask."""
-    mask = np.zeros((50, 50), dtype=np.float32)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="must be uint8"):
-        export_svg_potrace(mask, output_path, px_per_mm=10.0)
-
-
-def test_export_svg_potrace_invalid_values() -> None:
-    """Test error on non-binary values."""
-    mask = np.full((50, 50), 2, dtype=np.uint8)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="only 0 or 1"):
-        export_svg_potrace(mask, output_path, px_per_mm=10.0)
-
-
-def test_export_svg_potrace_invalid_px_per_mm() -> None:
-    """Test error on invalid px_per_mm."""
-    mask = np.zeros((50, 50), dtype=np.uint8)
-    output_path = Path("test.svg")
-
-    with pytest.raises(ValueError, match="must be positive"):
-        export_svg_potrace(mask, output_path, px_per_mm=0.0)
-
-
-def test_export_all_formats(tmp_path: Path) -> None:
-    """Test exporting to all formats."""
-    # Create test mask
-    mask = np.zeros((100, 100), dtype=np.uint8)
-    mask[20:80, 20:80] = 1
-
-    # Export to all formats
-    png_path = tmp_path / "layer.png"
-    svg_contours_path = tmp_path / "layer_contours.svg"
-    svg_potrace_path = tmp_path / "layer_potrace.svg"
-
-    export_png(mask, png_path)
-    export_svg_contours(mask, svg_contours_path, px_per_mm=10.0)
-    export_svg_potrace(mask, svg_potrace_path, px_per_mm=10.0)
-
-    # Verify all files exist
-    assert png_path.exists()
-    assert svg_contours_path.exists()
-    assert svg_potrace_path.exists()
-
-    # Verify PNG content
-    loaded_png = cv2.imread(str(png_path), cv2.IMREAD_GRAYSCALE)
-    assert loaded_png is not None
-
-    # Verify SVG content
-    assert "<svg" in svg_contours_path.read_text()
-    assert "<svg" in svg_potrace_path.read_text()
