@@ -1,0 +1,88 @@
+{
+  "input_image": "/home/user/stencilify/test_images/test_portrait_stencil_optimized.png",
+  "palette": [
+    "#000000",
+    "#808080",
+    "#ffffff"
+  ],
+  "paint_order": "auto",
+  "page": {
+    "size": "A4",
+    "orientation": "auto",
+    "margin_mm": 10.0
+  },
+  "resolution": {
+    "px_per_mm": 11.811023622047244
+  },
+  "parameters": {
+    "min_feature_mm": 2.0,
+    "min_island_area_mm2": 25.0,
+    "bridge_width_mm": 1.0,
+    "smooth_lambda": 1.0,
+    "cleanup_strength": 1.0
+  },
+  "superpixels": {
+    "count": 460,
+    "compactness": 10.0
+  },
+  "layers": [
+    {
+      "color": "#000000",
+      "before_optimization": {
+        "material_pixels": 437549,
+        "open_pixels": 19251,
+        "contours": 6
+      },
+      "after_optimization": {
+        "material_pixels": 440061,
+        "open_pixels": 16739,
+        "contours": 1,
+        "contour_length": 605.7127643823624
+      },
+      "island_fixing": {
+        "islands_found": 0,
+        "islands_filled": 0,
+        "bridges_added": 0
+      }
+    },
+    {
+      "color": "#808080",
+      "before_optimization": {
+        "material_pixels": 417753,
+        "open_pixels": 39047,
+        "contours": 11
+      },
+      "after_optimization": {
+        "material_pixels": 426774,
+        "open_pixels": 30026,
+        "contours": 3,
+        "contour_length": 1516.589963555336
+      },
+      "island_fixing": {
+        "islands_found": 0,
+        "islands_filled": 0,
+        "bridges_added": 0
+      }
+    },
+    {
+      "color": "#ffffff",
+      "before_optimization": {
+        "material_pixels": 135789,
+        "open_pixels": 321011,
+        "contours": 70
+      },
+      "after_optimization": {
+        "material_pixels": 115973,
+        "open_pixels": 340827,
+        "contours": 2,
+        "contour_length": 6246.501982688904
+      },
+      "island_fixing": {
+        "islands_found": 3,
+        "islands_filled": 2,
+        "bridges_added": 1
+      }
+    }
+  ],
+  "warnings": []
+}
