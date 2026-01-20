@@ -14,10 +14,15 @@ def auto_detect_subject(rgb: np.ndarray) -> np.ndarray:
     """
     Automatically detect the subject in an RGB image and create an alpha mask.
 
-    Uses a combination of strategies:
-    1. Corner-based background detection
-    2. Threshold-based segmentation (for uniform backgrounds)
-    3. Morphological operations to clean up the mask
+    This is a stencil-optimized algorithm that favors high recall (capturing the full
+    subject) over precision. It combines multiple detection strategies using OR logic
+    to be inclusive, as subsequent stencil optimization stages handle cleanup.
+
+    Strategies used:
+    1. RGB color distance from border-sampled background
+    2. Contrast-based detection (high local contrast = likely subject)
+    3. Grayscale intensity difference from background
+    4. Morphological operations for cleanup and edge recovery
 
     Args:
         rgb: RGB image array of shape (H, W, 3), uint8
@@ -25,50 +30,70 @@ def auto_detect_subject(rgb: np.ndarray) -> np.ndarray:
     Returns:
         Alpha mask of shape (H, W), uint8 (0=transparent, 255=opaque)
     """
-    from scipy.ndimage import binary_dilation, binary_erosion, binary_fill_holes
+    from scipy.ndimage import binary_dilation, binary_erosion, binary_fill_holes, gaussian_filter
 
     h, w = rgb.shape[:2]
 
-    # Convert to grayscale for analysis
-    gray = np.mean(rgb, axis=2).astype(np.uint8)
+    # Strategy 1: RGB color distance (more accurate than grayscale)
+    # Sample entire border instead of just corners for robust background estimation
+    border_width = max(5, min(h, w) // 40)
 
-    # Strategy 1: Corner-based background detection
-    # Sample corners to detect background color
-    corner_size = max(10, min(h, w) // 20)  # At least 10px, or 5% of image
-    corners = [
-        gray[0:corner_size, 0:corner_size],  # Top-left
-        gray[0:corner_size, -corner_size:],  # Top-right
-        gray[-corner_size:, 0:corner_size],  # Bottom-left
-        gray[-corner_size:, -corner_size:],  # Bottom-right
-    ]
+    # Sample all four borders
+    top = rgb[0:border_width, :].reshape(-1, 3)
+    bottom = rgb[-border_width:, :].reshape(-1, 3)
+    left = rgb[:, 0:border_width].reshape(-1, 3)
+    right = rgb[:, -border_width:].reshape(-1, 3)
 
-    # Estimate background intensity from corners
-    corner_values = np.concatenate([c.flatten() for c in corners])
-    bg_intensity = np.median(corner_values)
-    bg_std = np.std(corner_values)
+    border_pixels = np.vstack([top, bottom, left, right])
+    bg_color = np.median(border_pixels, axis=0)
 
-    # Create initial mask based on similarity to background
-    # Pixels similar to background are marked as background (0)
+    # Compute color distance for each pixel from background
+    color_diff = np.sqrt(np.sum((rgb.astype(float) - bg_color) ** 2, axis=2))
+
+    # Use percentile-based threshold to capture 70% of image
+    # (more lenient for stencils)
+    threshold_color = np.percentile(color_diff, 30)
+    mask1 = color_diff > threshold_color
+
+    # Strategy 2: Contrast-based detection
+    # Convert to grayscale
+    gray = (rgb[:, :, 0] * 0.299 + rgb[:, :, 1] * 0.587 + rgb[:, :, 2] * 0.114).astype(
+        np.uint8
+    )
+
+    # Areas with high local contrast are likely part of the subject
+    # Compute local contrast using difference from local blur
+    blurred = gaussian_filter(gray.astype(float), sigma=5)
+    contrast = np.abs(gray.astype(float) - blurred)
+
+    threshold_contrast = np.percentile(contrast, 50)
+    mask2 = contrast > threshold_contrast
+
+    # Strategy 3: Grayscale intensity difference (fallback)
+    bg_intensity = np.median(border_pixels.mean(axis=1))
     intensity_diff = np.abs(gray.astype(float) - bg_intensity)
+    threshold_intensity = max(10, np.std(intensity_diff) * 1.0)
+    mask3 = intensity_diff > threshold_intensity
 
-    # More lenient threshold to capture more of the subject
-    threshold = max(15, bg_std * 1.5)  # Lower threshold
+    # Combine all masks with OR logic (inclusive approach)
+    combined = mask1 | mask2 | mask3
 
-    # Initial foreground mask (True = foreground/subject)
-    foreground = intensity_diff > threshold
+    # Morphological cleanup
+    # Light erosion to remove tiny noise
+    combined = binary_erosion(combined, iterations=1)
 
-    # Strategy 2: Morphological cleanup
-    # Remove small noise in background
-    foreground = binary_erosion(foreground, iterations=1)
+    # Fill holes in foreground
+    combined = binary_fill_holes(combined)
 
-    # Fill holes in foreground (important for capturing full subject)
-    foreground = binary_fill_holes(foreground)
+    # Aggressive dilation to ensure full subject coverage
+    # This is key for stencils - better to include too much than too little
+    combined = binary_dilation(combined, iterations=5)
 
-    # Dilate to recover edges and ensure full coverage
-    foreground = binary_dilation(foreground, iterations=3)
+    # Final fill to clean up any remaining holes
+    combined = binary_fill_holes(combined)
 
     # Convert to uint8 alpha channel
-    alpha = (foreground * 255).astype(np.uint8)
+    alpha = (combined * 255).astype(np.uint8)
 
     return alpha
 
