@@ -314,8 +314,9 @@ def run_pipeline(config: PipelineConfig) -> PipelineResult:
 
     # Step 4: Open masks + paint order
     logger.info("Step 4: Building layer masks")
+    logger.info(f"  Layer mode: {config.layer_mode.value}")
 
-    open_masks = build_open_masks(label_map, silhouette, palette_hex)
+    open_masks = build_open_masks(label_map, silhouette, palette_hex, mode=config.layer_mode)
     paint_order_indices = compute_paint_order(palette_hex, config.paint_order)
 
     logger.info(f"  Created {len(open_masks)} layer masks")
