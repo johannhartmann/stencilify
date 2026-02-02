@@ -165,7 +165,7 @@ def evaluate_candidate(
     label_map = create_pixel_label_map(spx_labels, labeling_result.label_per_spx, silhouette)
 
     # Step 3: Build open masks
-    open_masks = build_open_masks(label_map, silhouette, palette_hex)
+    open_masks = build_open_masks(label_map, silhouette, palette_hex, mode=config.layer_mode)
 
     # Step 4: Optimize each layer and collect metrics
     min_feature_px = round(config.cuttability.min_feature_mm * px_per_mm * params.cleanup_strength)

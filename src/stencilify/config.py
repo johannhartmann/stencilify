@@ -94,6 +94,13 @@ class PaintOrder(str, Enum):
     GIVEN = "given"
 
 
+class LayerMode(str, Enum):
+    """Layer generation mode."""
+
+    KNOCKOUT = "knockout"
+    OVERLAPPING = "overlapping"
+
+
 class VectorBackend(str, Enum):
     """Vector export backend."""
 
@@ -197,6 +204,10 @@ class PipelineConfig(BaseModel):
     paint_order: PaintOrder = Field(
         default=PaintOrder.AUTO,
         description="Paint order: auto (sort by luminance) or given",
+    )
+    layer_mode: LayerMode = Field(
+        default=LayerMode.KNOCKOUT,
+        description="Layer mode: knockout (exclusive) or overlapping (traditional stencil)",
     )
 
     # Page layout

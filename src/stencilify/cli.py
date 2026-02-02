@@ -12,6 +12,7 @@ from stencilify.config import (
     AutotuneConfig,
     CuttabilityConfig,
     ExportConfig,
+    LayerMode,
     LockSpec,
     PageSpec,
     PaintOrder,
@@ -173,6 +174,13 @@ def generate(
             help="Paint order: auto (sort by luminance, dark to light) or given",
         ),
     ] = "auto",
+    layer_mode: Annotated[
+        str,
+        typer.Option(
+            "--layer-mode",
+            help="Layer mode: knockout (exclusive, color separation) or overlapping (traditional stencil graffiti)",
+        ),
+    ] = "knockout",
     lock: Annotated[
         list[str] | None,
         typer.Option(
@@ -269,6 +277,7 @@ def generate(
             ),
             palette=palette_colors,
             paint_order=PaintOrder(paint_order),
+            layer_mode=LayerMode(layer_mode),
             page=PageSpec(
                 size=page,
                 orientation=orientation,

@@ -140,8 +140,8 @@ def place_artwork_on_page(
     placed_masks: dict[str, np.ndarray] = {}
 
     for name, mask in open_masks.items():
-        # Create page canvas (all open = 1 by default)
-        canvas = np.ones((canvas_h, canvas_w), dtype=np.uint8)
+        # Create page canvas (all material = 0, borders will remain solid)
+        canvas = np.zeros((canvas_h, canvas_w), dtype=np.uint8)
 
         # Resize mask to scaled size
         scaled_mask = cv2.resize(
@@ -167,9 +167,9 @@ def add_registration_marks(
     """
     Add registration marks to all layers.
 
-    Adds 3 circular cutouts (open=1) at top-left, top-right, and bottom-left
-    positions in the margin area. Marks are identical across all layers for
-    precise alignment.
+    Adds 4 circular cutouts (open=1) at all four corners (top-left, top-right,
+    bottom-left, bottom-right) in the margin area. Marks are identical across
+    all layers for precise alignment.
 
     Args:
         placed_masks: Dictionary of layer name -> placed open_mask on page canvas
@@ -214,10 +214,15 @@ def add_registration_marks(
     bl_x = round((margin_mm / 2) * px_per_mm)
     bl_y = canvas_h - round((margin_mm / 2) * px_per_mm)
 
+    # Bottom-right
+    br_x = canvas_w - round((margin_mm / 2) * px_per_mm)
+    br_y = canvas_h - round((margin_mm / 2) * px_per_mm)
+
     mark_positions = [
         RegistrationMark(center_px=(tl_x, tl_y), radius_px=radius_px),
         RegistrationMark(center_px=(tr_x, tr_y), radius_px=radius_px),
         RegistrationMark(center_px=(bl_x, bl_y), radius_px=radius_px),
+        RegistrationMark(center_px=(br_x, br_y), radius_px=radius_px),
     ]
 
     # Add marks to all masks

@@ -1,0 +1,88 @@
+{
+  "input_image": "/home/user/stencilify/test_images/test_portrait.jpg",
+  "palette": [
+    "#000000",
+    "#808080",
+    "#ffffff"
+  ],
+  "paint_order": "auto",
+  "page": {
+    "size": "A4",
+    "orientation": "auto",
+    "margin_mm": 10.0
+  },
+  "resolution": {
+    "px_per_mm": 11.811023622047244
+  },
+  "parameters": {
+    "min_feature_mm": 2.0,
+    "min_island_area_mm2": 25.0,
+    "bridge_width_mm": 1.0,
+    "smooth_lambda": 1.0,
+    "cleanup_strength": 1.0
+  },
+  "superpixels": {
+    "count": 471,
+    "compactness": 10.0
+  },
+  "layers": [
+    {
+      "color": "#000000",
+      "before_optimization": {
+        "material_pixels": 436717,
+        "open_pixels": 20083,
+        "contours": 2
+      },
+      "after_optimization": {
+        "material_pixels": 439590,
+        "open_pixels": 17210,
+        "contours": 1,
+        "contour_length": 638.4406859874725
+      },
+      "island_fixing": {
+        "islands_found": 0,
+        "islands_filled": 0,
+        "bridges_added": 0
+      }
+    },
+    {
+      "color": "#808080",
+      "before_optimization": {
+        "material_pixels": 416258,
+        "open_pixels": 40542,
+        "contours": 4
+      },
+      "after_optimization": {
+        "material_pixels": 419209,
+        "open_pixels": 37591,
+        "contours": 4,
+        "contour_length": 2005.734185576439
+      },
+      "island_fixing": {
+        "islands_found": 0,
+        "islands_filled": 0,
+        "bridges_added": 0
+      }
+    },
+    {
+      "color": "#ffffff",
+      "before_optimization": {
+        "material_pixels": 61684,
+        "open_pixels": 395116,
+        "contours": 4
+      },
+      "after_optimization": {
+        "material_pixels": 56700,
+        "open_pixels": 400100,
+        "contours": 1,
+        "contour_length": 4955.8561091423035
+      },
+      "island_fixing": {
+        "islands_found": 4,
+        "islands_filled": 2,
+        "bridges_added": 3
+      }
+    }
+  ],
+  "warnings": []
+}

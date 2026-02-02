@@ -2,24 +2,37 @@
 
 import numpy as np
 
-from stencilify.config import PaintOrder
+from stencilify.config import LayerMode, PaintOrder
 
 
 def build_open_masks(
     label_map: np.ndarray,
     silhouette: np.ndarray,
     palette: list[str],
+    mode: LayerMode = LayerMode.KNOCKOUT,
 ) -> dict[str, np.ndarray]:
     """
     Build binary open masks for each palette color.
 
     An open mask has 1 where material should be cut out / paint sprayed.
-    In knockout mode, each pixel inside the silhouette belongs to exactly one label.
+
+    Two modes are supported:
+    - KNOCKOUT: Each pixel belongs to exactly one layer (exclusive masks)
+    - OVERLAPPING: Each layer includes all lighter colors (traditional stencil graffiti)
+
+    In overlapping mode, layers are cumulative:
+    - Darkest layer (index 0): includes pixels with label >= 0 (all colors)
+    - Mid layer (index 1): includes pixels with label >= 1 (mid + light)
+    - Lightest layer (index N): includes only pixels with label == N
+
+    This allows traditional stencil painting where each lighter layer is painted
+    over the previous darker layers.
 
     Args:
         label_map: [H, W] array with palette index (0..K-1) per pixel, -1 outside silhouette
         silhouette: [H, W] binary mask (0/1)
-        palette: List of HEX color strings in order
+        palette: List of HEX color strings in order (sorted dark to light for overlapping)
+        mode: Layer generation mode (knockout or overlapping)
 
     Returns:
         Dict mapping color_hex -> binary mask [H, W] with 0/1 values
@@ -38,16 +51,28 @@ def build_open_masks(
     h, w = label_map.shape
     open_masks: dict[str, np.ndarray] = {}
 
-    # Create mask for each palette color
-    for idx, color_hex in enumerate(palette):
-        # Mask is 1 where label_map == idx
-        mask = np.zeros((h, w), dtype=np.uint8)
-        mask[label_map == idx] = 1
+    if mode == LayerMode.KNOCKOUT:
+        # Knockout mode: each pixel belongs to exactly one layer
+        for idx, color_hex in enumerate(palette):
+            mask = np.zeros((h, w), dtype=np.uint8)
+            mask[label_map == idx] = 1
+            mask = mask & silhouette
+            open_masks[color_hex] = mask
 
-        # Ensure mask is only within silhouette
-        mask = mask & silhouette
+    elif mode == LayerMode.OVERLAPPING:
+        # Overlapping mode: each layer includes all lighter colors
+        # Layer 0 (darkest): includes all pixels (0, 1, 2, ...)
+        # Layer 1: includes pixels with label >= 1 (1, 2, ...)
+        # Layer N (lightest): includes only pixels with label == N
+        for idx, color_hex in enumerate(palette):
+            mask = np.zeros((h, w), dtype=np.uint8)
+            # Include this layer and all lighter layers
+            mask[label_map >= idx] = 1
+            mask = mask & silhouette
+            open_masks[color_hex] = mask
 
-        open_masks[color_hex] = mask
+    else:
+        raise ValueError(f"Unknown layer mode: {mode}")
 
     return open_masks
 

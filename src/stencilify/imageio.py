@@ -4,14 +4,106 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 from stencilify.config import PipelineConfig
 from stencilify.geometry import get_page_dimensions
 
 
+def auto_detect_subject(rgb: np.ndarray) -> np.ndarray:
+    """
+    Automatically detect the subject in an RGB image and create an alpha mask.
+
+    This is a stencil-optimized algorithm that favors high recall (capturing the full
+    subject) over precision. It combines multiple detection strategies using OR logic
+    to be inclusive, as subsequent stencil optimization stages handle cleanup.
+
+    Strategies used:
+    1. RGB color distance from border-sampled background
+    2. Contrast-based detection (high local contrast = likely subject)
+    3. Grayscale intensity difference from background
+    4. Morphological operations for cleanup and edge recovery
+
+    Args:
+        rgb: RGB image array of shape (H, W, 3), uint8
+
+    Returns:
+        Alpha mask of shape (H, W), uint8 (0=transparent, 255=opaque)
+    """
+    from scipy.ndimage import binary_dilation, binary_erosion, binary_fill_holes, gaussian_filter
+
+    h, w = rgb.shape[:2]
+
+    # Strategy 1: RGB color distance (more accurate than grayscale)
+    # Sample entire border instead of just corners for robust background estimation
+    border_width = max(5, min(h, w) // 40)
+
+    # Sample all four borders
+    top = rgb[0:border_width, :].reshape(-1, 3)
+    bottom = rgb[-border_width:, :].reshape(-1, 3)
+    left = rgb[:, 0:border_width].reshape(-1, 3)
+    right = rgb[:, -border_width:].reshape(-1, 3)
+
+    border_pixels = np.vstack([top, bottom, left, right])
+    bg_color = np.median(border_pixels, axis=0)
+
+    # Compute color distance for each pixel from background
+    color_diff = np.sqrt(np.sum((rgb.astype(float) - bg_color) ** 2, axis=2))
+
+    # Use percentile-based threshold to capture 70% of image
+    # (more lenient for stencils)
+    threshold_color = np.percentile(color_diff, 30)
+    mask1 = color_diff > threshold_color
+
+    # Strategy 2: Contrast-based detection
+    # Convert to grayscale
+    gray = (rgb[:, :, 0] * 0.299 + rgb[:, :, 1] * 0.587 + rgb[:, :, 2] * 0.114).astype(
+        np.uint8
+    )
+
+    # Areas with high local contrast are likely part of the subject
+    # Compute local contrast using difference from local blur
+    blurred = gaussian_filter(gray.astype(float), sigma=5)
+    contrast = np.abs(gray.astype(float) - blurred)
+
+    threshold_contrast = np.percentile(contrast, 50)
+    mask2 = contrast > threshold_contrast
+
+    # Strategy 3: Grayscale intensity difference (fallback)
+    bg_intensity = np.median(border_pixels.mean(axis=1))
+    intensity_diff = np.abs(gray.astype(float) - bg_intensity)
+    threshold_intensity = max(10, np.std(intensity_diff) * 1.0)
+    mask3 = intensity_diff > threshold_intensity
+
+    # Combine all masks with OR logic (inclusive approach)
+    combined = mask1 | mask2 | mask3
+
+    # Morphological cleanup
+    # Light erosion to remove tiny noise
+    combined = binary_erosion(combined, iterations=1)
+
+    # Fill holes in foreground
+    combined = binary_fill_holes(combined)
+
+    # Aggressive dilation to ensure full subject coverage
+    # This is key for stencils - better to include too much than too little
+    combined = binary_dilation(combined, iterations=5)
+
+    # Final fill to clean up any remaining holes
+    combined = binary_fill_holes(combined)
+
+    # Convert to uint8 alpha channel
+    alpha = (combined * 255).astype(np.uint8)
+
+    return alpha
+
+
 def load_rgba(image_path: Path) -> tuple[np.ndarray, np.ndarray]:
     """
-    Load an RGBA image from disk.
+    Load an RGBA image from disk, or convert RGB to RGBA with automatic subject detection.
+
+    For images without an alpha channel (RGB, L, etc.), this function automatically
+    detects the subject and creates a silhouette mask by analyzing the background.
 
     Args:
         image_path: Path to the input image
@@ -22,7 +114,6 @@ def load_rgba(image_path: Path) -> tuple[np.ndarray, np.ndarray]:
         - alpha: uint8 array of shape (H, W)
 
     Raises:
-        ValueError: If the image does not have an alpha channel
         FileNotFoundError: If the image file does not exist
     """
     if not image_path.exists():
@@ -32,23 +123,25 @@ def load_rgba(image_path: Path) -> tuple[np.ndarray, np.ndarray]:
     img = Image.open(image_path)
 
     # Convert to RGBA if not already
-    if img.mode != "RGBA":
-        # Try to get alpha channel
-        if "transparency" in img.info:
-            img = img.convert("RGBA")  # type: ignore[assignment]
-        else:
-            raise ValueError(
-                f"Input image must have an alpha channel (RGBA). "
-                f"Got mode: {img.mode}. "
-                f"Please provide an image with transparency/alpha channel."
-            )
+    if img.mode == "RGBA":
+        # Already has alpha channel
+        img_array = np.array(img, dtype=np.uint8)
+        rgb = img_array[:, :, :3]
+        alpha = img_array[:, :, 3]
+    elif "transparency" in img.info:
+        # Has transparency info, convert to RGBA
+        img = img.convert("RGBA")  # type: ignore[assignment]
+        img_array = np.array(img, dtype=np.uint8)
+        rgb = img_array[:, :, :3]
+        alpha = img_array[:, :, 3]
+    else:
+        # No alpha channel - automatically detect subject
+        # First convert to RGB if needed (handles grayscale, etc.)
+        img_rgb = img.convert("RGB")  # type: ignore[assignment]
+        rgb = np.array(img_rgb, dtype=np.uint8)
 
-    # Convert to numpy arrays
-    img_array = np.array(img, dtype=np.uint8)
-
-    # Split into RGB and alpha
-    rgb = img_array[:, :, :3]
-    alpha = img_array[:, :, 3]
+        # Automatically detect subject and create alpha mask
+        alpha = auto_detect_subject(rgb)
 
     return rgb, alpha
 
